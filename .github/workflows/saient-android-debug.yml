@@ -64,7 +64,7 @@ jobs:
           lock = json.loads(pathlib.Path("engine/wan/BACKEND_LOCK.json").read_text())
           p = pathlib.Path("engine/arm64-v8a/libquartz-wan.so")
           header = p.read_bytes()[:20]
-          assert header[:4] == b"\\x7fELF" and header[4] == 2, "Not a 64-bit ELF"
+          assert header[:4] == b"\x7fELF" and header[4] == 2, "Not a 64-bit ELF"
           assert struct.unpack_from("<H", header, 18)[0] == 183, "Not AArch64"
           assert p.stat().st_size == lock["artifact"]["bytes"], "Wan size mismatch"
           digest = hashlib.sha256(p.read_bytes()).hexdigest()
