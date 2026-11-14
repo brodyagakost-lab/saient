@@ -35,13 +35,29 @@ jobs:
         run: |
           test -s engine/arm64-v8a/libquartz.so
           test -s engine/arm64-v8a/libquartz-wan.so
+          file engine/arm64-v8a/libquartz.so
           file engine/arm64-v8a/libquartz-wan.so
+          python3 - <<'PY'
+          import hashlib, json, pathlib, struct
+          lock = json.loads(pathlib.Path("engine/wan/BACKEND_LOCK.json").read_text())
+          p = pathlib.Path("engine/arm64-v8a/libquartz-wan.so")
+          header = p.read_bytes()[:20]
+          assert header[:4] == b"\\x7fELF" and header[4] == 2, "Not a 64-bit ELF"
+          assert struct.unpack_from("<H", header, 18)[0] == 183, "Not AArch64"
+          assert p.stat().st_size == lock["artifact"]["bytes"], "Wan size mismatch"
+          digest = hashlib.sha256(p.read_bytes()).hexdigest()
+          assert digest == lock["artifact"]["sha256"], "Wan SHA-256 mismatch"
+          print("Wan2.1 ARM64 ELF and SHA-256 verified")
+          PY
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Check Wan2.1
-        run: npm run test:wan
+      - name: Check Wan2.1, models and TypeScript
+        run: |
+          npm run test:wan
+          npm run test:models
+          npm run typecheck
 
       - name: Generate Android project
         run: npx expo prebuild --platform android --no-install
@@ -49,6 +65,12 @@ jobs:
       - name: Build debug APK
         working-directory: android
         run: ./gradlew assembleDebug --no-daemon
+
+      - name: Check APK contains Wan2.1
+        run: |
+          test -s android/app/build/outputs/apk/debug/app-debug.apk
+          unzip -l android/app/build/outputs/apk/debug/app-debug.apk | grep -F 'lib/arm64-v8a/libquartz-wan.so'
+          sha256sum android/app/build/outputs/apk/debug/app-debug.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
