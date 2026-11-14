@@ -72,8 +72,11 @@ jobs:
           print("Wan2.1 ARM64 ELF and SHA-256 verified")
           PY
 
+      - name: Synchronize npm lockfile for CI
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --no-audit --no-fund
 
       - name: Check Wan2.1, models and TypeScript
         run: |
