@@ -95,19 +95,22 @@ jobs:
           printf '\norg.gradle.jvmargs=-Xmx6144m -XX:MaxMetaspaceSize=1024m -Dfile.encoding=UTF-8\n' >> android/gradle.properties
           grep '^org.gradle.jvmargs=' android/gradle.properties
 
-      - name: Build debug APK
+      - name: Build standalone APK (release mode, debug-signed for testing)
         working-directory: android
-        run: ./gradlew :app:assembleDebug --no-daemon --max-workers=2 --stacktrace
+        env:
+          SAIENT_ALLOW_DEBUG_RELEASE: 'true'
+          NODE_ENV: production
+        run: ./gradlew :app:assembleRelease --no-daemon --max-workers=2 --stacktrace
 
-      - name: Check APK contains Wan2.1
+      - name: Check standalone APK contains Wan2.1
         run: |
-          test -s android/app/build/outputs/apk/debug/app-debug.apk
-          unzip -l android/app/build/outputs/apk/debug/app-debug.apk | grep -F 'lib/arm64-v8a/libquartz-wan.so'
-          sha256sum android/app/build/outputs/apk/debug/app-debug.apk
+          test -s android/app/build/outputs/apk/release/app-release.apk
+          unzip -l android/app/build/outputs/apk/release/app-release.apk | grep -F 'lib/arm64-v8a/libquartz-wan.so'
+          sha256sum android/app/build/outputs/apk/release/app-release.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: saient-wan21-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: saient-wan21-standalone-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
           retention-days: 7
